@@ -1,0 +1,847 @@
+// Prisma Schema for AI Job Copilot
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// User model represents the core account identity in AI Job Copilot.
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(255)
+  email     String   @unique @db.VarChar(255)
+  phone     String?  @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  profile        Profile?
+  resume         Resume?
+  skills         Skill[]
+  projects       Project[]
+  education      Education[]
+  experience     Experience[]
+  certifications Certification[]
+  matchResults   MatchResult[]
+  analyticsSnapshots AnalyticsSnapshot[]
+  tailoredResumes TailoredResume[]
+  applications   Application[]
+  reports        Report[]
+  recruiters     Recruiter[]
+  interviewPreparations InterviewPreparation[]
+  mockInterviews        MockInterview[]
+  applicationDrafts     ApplicationDraft[]
+  auditLogs             AuditLog[]
+  apiKeys               ApiKey[]
+  webhooks              Webhook[]
+  oauthConnections      OAuthConnection[]
+  agentTasks            AgentTask[]
+  agentMemories         AgentMemory[]
+  workflowExecutions    WorkflowExecution[]
+  outcomeEvents         OutcomeEvent[]
+  resumePerformances    ResumePerformance[]
+  skillImpacts          SkillImpact[]
+  careerIntelligenceSnapshots CareerIntelligenceSnapshot[]
+
+  // Indexes & Table Configuration
+  @@index([email], name: "idx_users_email")
+  @@map("users")
+}
+
+/// Profile model stores job search preferences, candidate background, and resume link.
+/// Maintained with a strict 1-to-1 relationship with the User model.
+model Profile {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @unique @map("user_id") @db.Uuid
+  summary            String?  @map("summary") @db.Text
+  preferredRoles     String[] @default([]) @map("preferred_roles")
+  preferredLocations String[] @default([]) @map("preferred_locations")
+  yearsOfExperience  Int      @default(0) @map("years_of_experience")
+  resumeUrl          String?  @map("resume_url") @db.Text
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  // Indexes & Table Configuration
+  @@index([userId], name: "idx_profiles_user_id")
+  @@map("profiles")
+}
+
+/// Resume model tracks stored candidate resume documents, storage paths, and file metadata.
+model Resume {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @unique @map("user_id") @db.Uuid
+  originalFilename String   @map("original_filename") @db.VarChar(255)
+  storedFilename   String   @map("stored_filename") @db.VarChar(255)
+  fileType         String   @map("file_type") @db.VarChar(100)
+  fileSize         Int      @map("file_size")
+  filePath         String   @map("file_path") @db.Text
+  uploadedAt       DateTime @default(now()) @map("uploaded_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tailoredResumes TailoredResume[]
+
+  // Indexes & Table Configuration
+  @@index([userId], name: "idx_resumes_user_id")
+  @@map("resumes")
+}
+
+/// Skill model records extracted candidate competencies with categorisation and confidence scoring.
+model Skill {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  name            String   @db.VarChar(100)
+  category        String   @db.VarChar(50) // Programming Language, Framework, Database, Cloud, AI/ML, Tool, Other
+  confidenceScore Float    @default(1.0) @map("confidence_score")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId], map: "idx_skills_user_id")
+  @@index([category], map: "idx_skills_category")
+  @@map("skills")
+}
+
+/// Project model captures portfolio and technical projects extracted from resume.
+model Project {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  title        String   @db.VarChar(255)
+  description  String   @db.Text
+  technologies String[] @default([])
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId], map: "idx_projects_user_id")
+  @@map("projects")
+}
+
+/// Education model tracks candidate academic degrees and institutions.
+model Education {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  institution  String   @db.VarChar(255)
+  degree       String   @db.VarChar(255)
+  fieldOfStudy String?  @map("field_of_study") @db.VarChar(255)
+  startDate    String?  @map("start_date") @db.VarChar(50)
+  endDate      String?  @map("end_date") @db.VarChar(50)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId], map: "idx_education_user_id")
+  @@map("education")
+}
+
+/// Experience model captures professional employment history.
+model Experience {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  company     String   @db.VarChar(255)
+  role        String   @db.VarChar(255)
+  description String   @db.Text
+  startDate   String?  @map("start_date") @db.VarChar(50)
+  endDate     String?  @map("end_date") @db.VarChar(50)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId], map: "idx_experience_user_id")
+  @@map("experience")
+}
+
+/// Certification model tracks professional certifications and accreditations.
+model Certification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String   @db.VarChar(255)
+  issuer    String   @db.VarChar(255)
+  issueDate String?  @map("issue_date") @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId], map: "idx_certifications_user_id")
+  @@map("certifications")
+}
+
+/// Job model captures aggregated job listings from multiple sources.
+model Job {
+  id             String    @id @default(uuid()) @db.Uuid
+  source         String    @db.VarChar(100)
+  externalId     String    @map("external_id") @db.VarChar(255)
+  title          String    @db.VarChar(255)
+  company        String    @db.VarChar(255)
+  location       String    @db.VarChar(255)
+  employmentType String?   @map("employment_type") @db.VarChar(100)
+  salaryMin      Decimal?  @map("salary_min") @db.Decimal(12, 2)
+  salaryMax      Decimal?  @map("salary_max") @db.Decimal(12, 2)
+  currency       String?   @db.VarChar(10)
+  description    String    @db.Text
+  requirements   String?   @db.Text
+  applyUrl       String    @map("apply_url") @db.Text
+  companyWebsite String?   @map("company_website") @db.VarChar(255)
+  postedAt       DateTime? @map("posted_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  skills          JobSkill[]
+  matchResults    MatchResult[]
+  tailoredResumes TailoredResume[]
+  applications   Application[]
+  interviewPreparations InterviewPreparation[]
+  applicationDrafts     ApplicationDraft[]
+
+  @@unique([source, externalId], map: "uq_jobs_source_external_id")
+  @@index([company, title], map: "idx_jobs_company_title")
+  @@index([location], map: "idx_jobs_location")
+  @@index([source], map: "idx_jobs_source")
+  @@index([postedAt], map: "idx_jobs_posted_at")
+  @@map("jobs")
+}
+
+/// JobSkill represents technical or soft skills associated with a job.
+model JobSkill {
+  id        String   @id @default(uuid()) @db.Uuid
+  jobId     String   @map("job_id") @db.Uuid
+  skillName String   @map("skill_name") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([jobId], map: "idx_job_skills_job_id")
+  @@index([skillName], map: "idx_job_skills_skill_name")
+  @@map("job_skills")
+}
+
+/// MatchResult model stores calculated job fit scores and AI-generated gap analysis.
+model MatchResult {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  jobId           String   @map("job_id") @db.Uuid
+
+  overallScore    Float    @map("overall_score")
+  skillScore      Float    @map("skill_score")
+  experienceScore Float    @map("experience_score")
+  educationScore  Float    @map("education_score")
+  locationScore   Float    @map("location_score")
+  roleScore       Float    @map("role_score")
+
+  strengths       String[] @default([])
+  missingSkills   String[] @default([]) @map("missing_skills")
+  recommendations String[] @default([])
+
+  generatedAt     DateTime @default(now()) @map("generated_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([userId, jobId], map: "uq_match_results_user_job")
+  @@index([userId], map: "idx_match_results_user_id")
+  @@index([jobId], map: "idx_match_results_job_id")
+  @@index([overallScore], map: "idx_match_results_overall_score")
+  @@map("match_results")
+}
+
+/// AnalyticsSnapshot tracks historical dashboard metrics and profile progress for trend analysis.
+model AnalyticsSnapshot {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  profileScore      Float    @map("profile_score")
+  readinessScore    Float    @map("readiness_score")
+  averageMatchScore Float    @map("average_match_score")
+  excellentMatches  Int      @map("excellent_matches")
+  strongMatches     Int      @map("strong_matches")
+  moderateMatches   Int      @map("moderate_matches")
+  weakMatches       Int      @map("weak_matches")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId, createdAt], map: "idx_analytics_snapshots_user_created")
+  @@map("analytics_snapshots")
+}
+
+/// TailoredResume tracks tailored resume variations customized for specific target jobs.
+model TailoredResume {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  jobId            String   @map("job_id") @db.Uuid
+  originalResumeId String?  @map("original_resume_id") @db.Uuid
+  title            String   @db.VarChar(255)
+  summary          String   @db.Text
+  content          String   @db.Text
+  atsScore         Float    @map("ats_score")
+  keywordCoverage  Float    @map("keyword_coverage")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  job            Job     @relation(fields: [jobId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  originalResume Resume? @relation(fields: [originalResumeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  applications   Application[]
+  resumePerformances ResumePerformance[]
+
+  @@index([userId], map: "idx_tailored_resumes_user_id")
+  @@index([jobId], map: "idx_tailored_resumes_job_id")
+  @@index([userId, jobId], map: "idx_tailored_resumes_user_job")
+  @@map("tailored_resumes")
+}
+
+/// Application model tracks a candidate's pipeline status, interactions, and events for target jobs.
+model Application {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  jobId            String    @map("job_id") @db.Uuid
+  tailoredResumeId String?   @map("tailored_resume_id") @db.Uuid
+  status           String    @default("SAVED") @db.VarChar(50) // SAVED, APPLIED, ASSESSMENT, INTERVIEW, OFFER, REJECTED, WITHDRAWN
+  applicationDate  DateTime? @map("application_date")
+  lastUpdated      DateTime  @default(now()) @updatedAt @map("last_updated")
+  source           String?   @db.VarChar(100)
+  notes            String?   @db.Text
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  job            Job             @relation(fields: [jobId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tailoredResume TailoredResume? @relation(fields: [tailoredResumeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  events         ApplicationEvent[]
+  interviews     Interview[]
+  outcomeEvents  OutcomeEvent[]
+
+  @@unique([userId, jobId], map: "uq_applications_user_job")
+  @@index([userId], map: "idx_applications_user_id")
+  @@index([jobId], map: "idx_applications_job_id")
+  @@index([status], map: "idx_applications_status")
+  @@index([userId, status], map: "idx_applications_user_status")
+  @@map("applications")
+}
+
+/// ApplicationEvent models chronological lifecycle events and status transitions.
+model ApplicationEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  applicationId String   @map("application_id") @db.Uuid
+  eventType     String   @map("event_type") @db.VarChar(100)
+  description   String   @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([applicationId], map: "idx_application_events_application_id")
+  @@index([createdAt], map: "idx_application_events_created_at")
+  @@map("application_events")
+}
+
+/// Interview model captures scheduled and completed interview rounds.
+model Interview {
+  id             String   @id @default(uuid()) @db.Uuid
+  applicationId  String   @map("application_id") @db.Uuid
+  interviewType  String   @map("interview_type") @db.VarChar(50) // HR, Technical, Managerial, Final
+  interviewDate  DateTime @map("interview_date")
+  interviewRound Int      @default(1) @map("interview_round")
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([applicationId], map: "idx_interviews_application_id")
+  @@index([interviewDate], map: "idx_interviews_interview_date")
+  @@map("interviews")
+}
+
+/// Report model stores generated reports and exports across PDF, CSV, XLSX, and JSON.
+model Report {
+  id                   String   @id @default(uuid()) @db.Uuid
+  userId               String   @map("user_id") @db.Uuid
+  reportType           String   @map("report_type") @db.VarChar(50) // APPLICATION_REPORT, MATCH_REPORT, SKILL_REPORT, CAREER_REPORT, RESUME_REPORT
+  title                String   @db.VarChar(255)
+  format               String   @db.VarChar(10) // PDF, CSV, XLSX, JSON
+  filePath             String   @map("file_path") @db.VarChar(500)
+  fileName             String   @map("file_name") @db.VarChar(255)
+  fileSize             Int      @default(0) @map("file_size")
+  downloadCount        Int      @default(0) @map("download_count")
+  generationDurationMs Float    @default(0) @map("generation_duration_ms")
+  summary              String?  @db.Text
+  generatedAt          DateTime @default(now()) @map("generated_at")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId], map: "idx_reports_user_id")
+  @@index([reportType], map: "idx_reports_report_type")
+  @@index([generatedAt], map: "idx_reports_generated_at")
+  @@map("reports")
+}
+
+/// Recruiter model represents professional contacts, hiring managers, and recruiters in the candidate's CRM.
+model Recruiter {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  name        String   @db.VarChar(255)
+  company     String   @db.VarChar(255)
+  title       String?  @db.VarChar(255)
+  email       String?  @db.VarChar(255)
+  linkedinUrl String?  @map("linkedin_url") @db.VarChar(500)
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  referrals    Referral[]
+  interactions ContactInteraction[]
+
+  @@index([userId], map: "idx_recruiters_user_id")
+  @@index([company], map: "idx_recruiters_company")
+  @@index([createdAt], map: "idx_recruiters_created_at")
+  @@map("recruiters")
+}
+
+/// Referral model tracks professional job referrals facilitated by contacts.
+model Referral {
+  id          String   @id @default(uuid()) @db.Uuid
+  recruiterId String   @map("recruiter_id") @db.Uuid
+  company     String   @db.VarChar(255)
+  role        String   @db.VarChar(255)
+  status      String   @default("Requested") @db.VarChar(50) // Requested, Received, Declined, Pending
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  recruiter Recruiter @relation(fields: [recruiterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([recruiterId], map: "idx_referrals_recruiter_id")
+  @@index([status], map: "idx_referrals_status")
+  @@index([company], map: "idx_referrals_company")
+  @@map("referrals")
+}
+
+/// ContactInteraction model captures chronological outreach events, calls, messages, and emails with contacts.
+model ContactInteraction {
+  id              String   @id @default(uuid()) @db.Uuid
+  recruiterId     String   @map("recruiter_id") @db.Uuid
+  interactionType String   @map("interaction_type") @db.VarChar(50) // Message, Email, Referral, Call, Interview
+  summary         String   @db.Text
+  interactionDate DateTime @default(now()) @map("interaction_date")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  recruiter Recruiter @relation(fields: [recruiterId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([recruiterId], map: "idx_contact_interactions_recruiter_id")
+  @@index([interactionDate], map: "idx_contact_interactions_date")
+  @@index([interactionType], map: "idx_contact_interactions_type")
+  @@map("contact_interactions")
+}
+
+/// InterviewPreparation model tracks personalized interview question sets generated for roles and jobs.
+model InterviewPreparation {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  jobId           String?  @map("job_id") @db.Uuid
+  role            String   @db.VarChar(255)
+  preparationType String   @map("preparation_type") @db.VarChar(100) // HR, Technical, Behavioral, System Design, Comprehensive, Role-Specific
+  generatedAt     DateTime @default(now()) @map("generated_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  job       Job?       @relation(fields: [jobId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  questions Question[]
+
+  @@index([userId], map: "idx_interview_preparations_user_id")
+  @@index([jobId], map: "idx_interview_preparations_job_id")
+  @@index([role], map: "idx_interview_preparations_role")
+  @@index([preparationType], map: "idx_interview_preparations_type")
+  @@map("interview_preparations")
+}
+
+/// Question model stores categorized questions with difficulty, sample answers, and candidate practice evaluations.
+model Question {
+  id            String    @id @default(uuid()) @db.Uuid
+  preparationId String    @map("preparation_id") @db.Uuid
+  category      String    @db.VarChar(100) // HR, Technical, Behavioral, Project-Based, Resume-Based, System Design
+  difficulty    String    @db.VarChar(50)  // Easy, Medium, Hard
+  question      String    @db.Text
+  sampleAnswer  String    @map("sample_answer") @db.Text
+  explanation   String    @db.Text
+  userAnswer    String?   @map("user_answer") @db.Text
+  score         Float?
+  feedback      String?   @db.Text
+  isCompleted   Boolean   @default(false) @map("is_completed")
+  evaluatedAt   DateTime? @map("evaluated_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  preparation InterviewPreparation @relation(fields: [preparationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([preparationId], map: "idx_questions_preparation_id")
+  @@index([category], map: "idx_questions_category")
+  @@index([difficulty], map: "idx_questions_difficulty")
+  @@index([isCompleted], map: "idx_questions_is_completed")
+  @@map("interview_questions")
+}
+
+/// MockInterview model records candidate practice sessions, composite scores, and AI feedback.
+model MockInterview {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  role      String   @db.VarChar(255)
+  score     Float
+  feedback  String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId], map: "idx_mock_interviews_user_id")
+  @@index([role], map: "idx_mock_interviews_role")
+  @@index([createdAt], map: "idx_mock_interviews_created_at")
+  @@map("mock_interviews")
+}
+
+/// ApplicationDraft tracks pre-submission application data, AI-generated answers, and document selection.
+model ApplicationDraft {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  jobId            String    @map("job_id") @db.Uuid
+  status           String    @default("Draft") @db.VarChar(50) // Draft, ReadyForReview, SubmittedByUser, Cancelled
+  generatedAnswers String?   @map("generated_answers") @db.Text
+  selectedResumeId String?   @map("selected_resume_id") @db.Uuid
+  readinessScore   Float?    @default(0.0) @map("readiness_score")
+  checklist        String?   @db.Text
+  notes            String?   @db.Text
+  submittedAt      DateTime? @map("submitted_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  job       Job                   @relation(fields: [jobId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  questions ApplicationQuestion[]
+
+  @@index([userId], map: "idx_application_drafts_user_id")
+  @@index([jobId], map: "idx_application_drafts_job_id")
+  @@index([status], map: "idx_application_drafts_status")
+  @@map("application_drafts")
+}
+
+/// ApplicationQuestion stores individual form questions, AI-generated answers, candidate edits, and answer types.
+model ApplicationQuestion {
+  id              String   @id @default(uuid()) @db.Uuid
+  draftId         String   @map("draft_id") @db.Uuid
+  question        String   @db.Text
+  generatedAnswer String?  @map("generated_answer") @db.Text
+  userAnswer      String?  @map("user_answer") @db.Text
+  answerType      String   @default("Text") @map("answer_type") @db.VarChar(50) // Text, YesNo, MultiSelect, Numeric
+  options         String[] @default([])
+  isRequired      Boolean  @default(true) @map("is_required")
+  isReviewed      Boolean  @default(false) @map("is_reviewed")
+  order           Int      @default(0)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  draft ApplicationDraft @relation(fields: [draftId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([draftId], map: "idx_application_questions_draft_id")
+  @@index([answerType], map: "idx_application_questions_type")
+  @@map("application_questions")
+}
+
+/// AuditLog tracks security events, administrative updates, and sensitive user operations.
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  action     String   @db.VarChar(100) // RESUME_UPLOAD, PROFILE_UPDATE, REPORT_GENERATION, APPLICATION_CHANGE, AUTH_LOGIN, TOKEN_REVOCATION
+  resource   String   @db.VarChar(100) // resume, profile, report, application, auth, system
+  resourceId String?  @map("resource_id") @db.VarChar(255)
+  details    String?  @db.Text
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  userAgent  String?  @map("user_agent") @db.VarChar(512)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([userId], map: "idx_audit_logs_user_id")
+  @@index([action], map: "idx_audit_logs_action")
+  @@index([resource], map: "idx_audit_logs_resource")
+  @@index([createdAt], map: "idx_audit_logs_created_at")
+  @@map("audit_logs")
+}
+
+/// ApiKey represents a credential for third-party systems accessing the Public API.
+model ApiKey {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  name         String    @db.VarChar(100)
+  keyHash      String    @unique @map("key_hash") @db.VarChar(255)
+  prefix       String    @db.VarChar(32)
+  scopes       String[]  @default(["read:profile", "read:resume", "read:matches", "read:applications", "read:reports"])
+  rateLimit    Int       @default(60) @map("rate_limit") // Requests per minute
+  monthlyLimit Int       @default(10000) @map("monthly_limit") // Requests per month
+  expiresAt    DateTime? @map("expires_at")
+  lastUsedAt   DateTime? @map("last_used_at")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId], map: "idx_api_keys_user_id")
+  @@index([keyHash], map: "idx_api_keys_key_hash")
+  @@index([prefix], map: "idx_api_keys_prefix")
+  @@index([isActive], map: "idx_api_keys_is_active")
+  @@map("api_keys")
+}
+
+/// Webhook defines an outbound event subscription for third-party system automation.
+model Webhook {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  endpoint     String   @db.VarChar(1024)
+  secret       String   @db.VarChar(255) // HMAC secret for signature verification
+  events       String[] @default([]) // resume.parsed, job.matched, report.generated, application.created, application.updated
+  enabled      Boolean  @default(true)
+  failureCount Int      @default(0) @map("failure_count")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  deliveryLogs WebhookDeliveryLog[]
+
+  @@index([userId], map: "idx_webhooks_user_id")
+  @@index([enabled], map: "idx_webhooks_enabled")
+  @@map("webhooks")
+}
+
+/// WebhookDeliveryLog captures delivery attempts, response codes, payloads, and retries.
+model WebhookDeliveryLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  webhookId      String   @map("webhook_id") @db.Uuid
+  event          String   @db.VarChar(100)
+  payload        String   @db.Text
+  responseStatus Int?     @map("response_status")
+  responseBody   String?  @map("response_body") @db.Text
+  durationMs     Float?   @map("duration_ms")
+  attempt        Int      @default(1)
+  success        Boolean  @default(false)
+  error          String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([webhookId], map: "idx_webhook_delivery_logs_webhook_id")
+  @@index([event], map: "idx_webhook_delivery_logs_event")
+  @@index([success], map: "idx_webhook_delivery_logs_success")
+  @@index([createdAt], map: "idx_webhook_delivery_logs_created_at")
+  @@map("webhook_delivery_logs")
+}
+
+/// OAuthConnection stores credentials, refresh tokens, and metadata for external provider integrations.
+model OAuthConnection {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  provider       String    @db.VarChar(50) // gmail, outlook, google_calendar, outlook_calendar, google_drive, dropbox, onedrive, slack
+  providerUserId String?   @map("provider_user_id") @db.VarChar(255)
+  accessToken    String?   @map("access_token") @db.Text
+  refreshToken   String?   @map("refresh_token") @db.Text
+  expiresAt      DateTime? @map("expires_at")
+  scopes         String[]  @default([])
+  metadata       String?   @db.Text // JSON metadata (e.g. account email, storage quota, calendar id)
+  status         String    @default("connected") @db.VarChar(50) // connected, expired, disconnected, error
+  lastSyncAt     DateTime? @map("last_sync_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([userId, provider], map: "uq_oauth_connections_user_provider")
+  @@index([userId], map: "idx_oauth_connections_user_id")
+  @@index([provider], map: "idx_oauth_connections_provider")
+  @@index([status], map: "idx_oauth_connections_status")
+  @@map("oauth_connections")
+}
+
+/// ApiUsageLog records telemetry for public and developer API requests.
+model ApiUsageLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  apiKeyId   String?  @map("api_key_id") @db.Uuid
+  endpoint   String   @db.VarChar(255)
+  method     String   @db.VarChar(10)
+  statusCode Int      @map("status_code")
+  latencyMs  Float    @map("latency_ms")
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([userId], map: "idx_api_usage_logs_user_id")
+  @@index([apiKeyId], map: "idx_api_usage_logs_api_key_id")
+  @@index([endpoint], map: "idx_api_usage_logs_endpoint")
+  @@index([createdAt], map: "idx_api_usage_logs_created_at")
+  @@map("api_usage_logs")
+}
+
+/// AgentTask tracks asynchronous and scheduled tasks executed by specialized agents.
+model AgentTask {
+  id                  String    @id @default(uuid()) @db.Uuid
+  userId              String?   @map("user_id") @db.Uuid
+  agent               String    @db.VarChar(100) // ResumeAgent, JobDiscoveryAgent, MatchingAgent, etc.
+  workflowExecutionId String?   @map("workflow_execution_id") @db.Uuid
+  status              String    @default("PENDING") @db.VarChar(50) // PENDING, RUNNING, COMPLETED, FAILED, CANCELLED
+  payload             String    @db.Text // JSON input payload
+  result              String?   @db.Text // JSON output result
+  errorMessage        String?   @map("error_message") @db.Text
+  modelUsed           String?   @map("model_used") @db.VarChar(100)
+  durationMs          Float?    @map("duration_ms")
+  retryCount          Int       @default(0) @map("retry_count")
+  maxRetries          Int       @default(3) @map("max_retries")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
+  completedAt         DateTime? @map("completed_at")
+
+  user              User?              @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  workflowExecution WorkflowExecution? @relation(fields: [workflowExecutionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([userId], map: "idx_agent_tasks_user_id")
+  @@index([agent], map: "idx_agent_tasks_agent")
+  @@index([status], map: "idx_agent_tasks_status")
+  @@index([workflowExecutionId], map: "idx_agent_tasks_workflow_id")
+  @@index([createdAt], map: "idx_agent_tasks_created_at")
+  @@map("agent_tasks")
+}
+
+/// AgentMemory stores persistent facts, user preferences, past critiques, and working context for agent collaboration.
+model AgentMemory {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  agent          String   @db.VarChar(100) // ResumeAgent, MatchingAgent, or * for global
+  memoryType     String   @map("memory_type") @db.VarChar(50) // short_term, long_term, critique, preference, fact, working_context
+  content        String   @db.Text // JSON or structured text
+  relevanceScore Float    @default(1.0) @map("relevance_score")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId], map: "idx_agent_memories_user_id")
+  @@index([agent], map: "idx_agent_memories_agent")
+  @@index([memoryType], map: "idx_agent_memories_type")
+  @@index([createdAt], map: "idx_agent_memories_created_at")
+  @@map("agent_memories")
+}
+
+/// WorkflowExecution orchestrates multi-agent DAG pipelines and tracks execution states.
+model WorkflowExecution {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  workflowType String    @map("workflow_type") @db.VarChar(100) // resume_ingestion_pipeline, application_preparation_pipeline, etc.
+  status       String    @default("PENDING") @db.VarChar(50) // PENDING, RUNNING, COMPLETED, FAILED, CANCELLED
+  currentStep  String?   @map("current_step") @db.VarChar(100)
+  steps        String    @db.Text // JSON serialized step records & statuses
+  context      String    @db.Text // JSON shared state passed between steps
+  durationMs   Float?    @map("duration_ms")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
+  completedAt  DateTime? @map("completed_at")
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tasks AgentTask[]
+
+  @@index([userId], map: "idx_workflow_executions_user_id")
+  @@index([workflowType], map: "idx_workflow_executions_type")
+  @@index([status], map: "idx_workflow_executions_status")
+  @@index([createdAt], map: "idx_workflow_executions_created_at")
+  @@map("workflow_executions")
+}
+
+/// OutcomeEvent records critical milestone events in an application lifecycle (Interviews, Assessments, Offers, Rejections).
+model OutcomeEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  applicationId String   @map("application_id") @db.Uuid
+  outcomeType   String   @map("outcome_type") @db.VarChar(50) // InterviewReceived, AssessmentReceived, OfferReceived, Rejected, Withdrawn
+  occurredAt    DateTime @default(now()) @map("occurred_at")
+  notes         String?  @db.Text
+  metadata      String?  @db.Text // JSON string with extra event context (interview round, salary, feedback)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId], map: "idx_outcome_events_user_id")
+  @@index([applicationId], map: "idx_outcome_events_application_id")
+  @@index([outcomeType], map: "idx_outcome_events_type")
+  @@index([occurredAt], map: "idx_outcome_events_occurred_at")
+  @@map("outcome_events")
+}
+
+/// ResumePerformance tracks empirical performance metrics for individual tailored resumes.
+model ResumePerformance {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @map("user_id") @db.Uuid
+  tailoredResumeId   String?  @map("tailored_resume_id") @db.Uuid
+  applicationsSent   Int      @default(0) @map("applications_sent")
+  interviewsReceived Int      @default(0) @map("interviews_received")
+  offersReceived     Int      @default(0) @map("offers_received")
+  responseRate       Float    @default(0.0) @map("response_rate")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tailoredResume TailoredResume? @relation(fields: [tailoredResumeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([userId], map: "idx_resume_performances_user_id")
+  @@index([tailoredResumeId], map: "idx_resume_performances_resume_id")
+  @@index([responseRate], map: "idx_resume_performances_response_rate")
+  @@map("resume_performances")
+}
+
+/// SkillImpact tracks correlation between specific candidate skills and job outcomes.
+model SkillImpact {
+  id                   String   @id @default(uuid()) @db.Uuid
+  userId               String   @map("user_id") @db.Uuid
+  skillName            String   @map("skill_name") @db.VarChar(100)
+  interviewsInfluenced Int      @default(0) @map("interviews_influenced")
+  offersInfluenced     Int      @default(0) @map("offers_influenced")
+  averageMatchScore    Float    @default(0.0) @map("average_match_score")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([userId, skillName], map: "uq_skill_impacts_user_skill")
+  @@index([userId], map: "idx_skill_impacts_user_id")
+  @@index([skillName], map: "idx_skill_impacts_skill_name")
+  @@index([interviewsInfluenced], map: "idx_skill_impacts_interviews")
+  @@map("skill_impacts")
+}
+
+/// CareerIntelligenceSnapshot persists analytics warehouse rollups and cohort snapshots for trend analysis.
+model CareerIntelligenceSnapshot {
+  id                  String   @id @default(uuid()) @db.Uuid
+  userId              String   @map("user_id") @db.Uuid
+  snapshotDate        DateTime @default(now()) @map("snapshot_date")
+  totalApplications   Int      @default(0) @map("total_applications")
+  interviewRate       Float    @default(0.0) @map("interview_rate")
+  offerRate           Float    @default(0.0) @map("offer_rate")
+  rejectionRate       Float    @default(0.0) @map("rejection_rate")
+  averageResponseDays Float    @default(0.0) @map("average_response_days")
+  metricsPayload      String   @map("metrics_payload") @db.Text // JSON string with cohort, strategy, and company breakdowns
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId], map: "idx_career_snapshots_user_id")
+  @@index([snapshotDate], map: "idx_career_snapshots_date")
+  @@map("career_intelligence_snapshots")
+}
+
+

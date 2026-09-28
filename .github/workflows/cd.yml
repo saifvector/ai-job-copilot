@@ -1,0 +1,61 @@
+name: CD Deployment Pipeline
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: "Target environment to deploy"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # Deploy Backend to Railway / Kubernetes
+  # ----------------------------------------------------------------------------
+  deploy-backend:
+    name: Deploy Backend & Worker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy Backend to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          if [ -n "$RAILWAY_TOKEN" ]; then
+            railway up --service backend --detach
+          else
+            echo "RAILWAY_TOKEN not configured. Skipping automated Railway trigger."
+          fi
+
+  # ----------------------------------------------------------------------------
+  # Deploy Frontend to Vercel
+  # ----------------------------------------------------------------------------
+  deploy-frontend:
+    name: Deploy Frontend to Vercel
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -n "$VERCEL_TOKEN" ]; then
+            npx vercel --prod --token $VERCEL_TOKEN
+          else
+            echo "VERCEL_TOKEN not configured. Skipping automated Vercel deployment."
+          fi

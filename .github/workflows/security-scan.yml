@@ -1,0 +1,41 @@
+name: Security Audit & Vulnerability Scan
+
+on:
+  schedule:
+    - cron: "0 4 * * 1" # Every Monday at 4:00 AM UTC
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "backend/requirements.txt"
+      - "package.json"
+      - "package-lock.json"
+
+jobs:
+  security-audit:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Security Scanners
+        run: |
+          pip install bandit pip-audit
+
+      - name: Python Static Code Security Analysis (Bandit)
+        run: |
+          bandit -r backend/core backend/api backend/services -ll -q
+
+      - name: Python Dependency Audit
+        run: |
+          pip-audit -r backend/requirements.txt || true
+
+      - name: Node.js Security Audit
+        run: |
+          npm audit --audit-level=high || true

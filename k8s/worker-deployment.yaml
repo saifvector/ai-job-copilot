@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: job-copilot-worker
+  namespace: job-copilot
+  labels:
+    app: job-copilot-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: job-copilot-worker
+  template:
+    metadata:
+      labels:
+        app: job-copilot-worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/jobcopilot/backend:latest
+          command: ["python", "-m", "workers.task_worker"]
+          envFrom:
+            - configMapRef:
+                name: job-copilot-config
+            - secretRef:
+                name: job-copilot-secrets
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1024Mi

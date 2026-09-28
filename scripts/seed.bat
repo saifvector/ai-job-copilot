@@ -1,0 +1,3 @@
+@echo off
+echo Running Prisma Database Seed...
+npm run seed --workspace=database

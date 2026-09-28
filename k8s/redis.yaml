@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: job-copilot-redis
+  namespace: job-copilot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: job-copilot-redis
+  template:
+    metadata:
+      labels:
+        app: job-copilot-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          command: ["redis-server", "--appendonly", "yes", "--maxmemory", "1024mb", "--maxmemory-policy", "volatile-lru"]
+          ports:
+            - containerPort: 6379
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: job-copilot-redis
+  namespace: job-copilot
+spec:
+  ports:
+    - port: 6379
+      targetPort: 6379
+  selector:
+    app: job-copilot-redis

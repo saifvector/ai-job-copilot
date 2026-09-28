@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: job-copilot-backend
+  namespace: job-copilot
+  labels:
+    app: job-copilot-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: job-copilot-backend
+  template:
+    metadata:
+      labels:
+        app: job-copilot-backend
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/jobcopilot/backend:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: job-copilot-config
+            - secretRef:
+                name: job-copilot-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 2000m
+              memory: 2048Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: job-copilot-backend
+  namespace: job-copilot
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app: job-copilot-backend

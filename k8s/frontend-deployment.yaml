@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: job-copilot-frontend
+  namespace: job-copilot
+  labels:
+    app: job-copilot-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: job-copilot-frontend
+  template:
+    metadata:
+      labels:
+        app: job-copilot-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/jobcopilot/frontend:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: NEXT_PUBLIC_API_URL
+              value: "https://api.jobcopilot.ai/api/v1"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: job-copilot-frontend
+  namespace: job-copilot
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: job-copilot-frontend

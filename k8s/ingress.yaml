@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: job-copilot-ingress
+  namespace: job-copilot
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "15m"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+spec:
+  tls:
+    - hosts:
+        - app.jobcopilot.ai
+        - api.jobcopilot.ai
+      secretName: job-copilot-tls
+  rules:
+    - host: app.jobcopilot.ai
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: job-copilot-frontend
+                port:
+                  number: 3000
+    - host: api.jobcopilot.ai
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: job-copilot-backend
+                port:
+                  number: 8000

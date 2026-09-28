@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: job-copilot-config
+  namespace: job-copilot
+data:
+  ENVIRONMENT: "production"
+  DEBUG: "false"
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"
+  CORS_ORIGINS: "https://app.jobcopilot.ai,https://jobcopilot.ai"
+  REDIS_URL: "redis://job-copilot-redis:6379/0"
+  DATABASE_POOL_SIZE: "20"
+  DATABASE_MAX_OVERFLOW: "30"
+  SYNC_INTERVAL_HOURS: "6"
+  NEXT_PUBLIC_API_URL: "https://api.jobcopilot.ai/api/v1"

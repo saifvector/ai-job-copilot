@@ -1,0 +1,76 @@
+# Root Git Ignore for AI Job Copilot Monorepo
+
+# Operating System files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.bak
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Keep example files
+!.env.example
+!frontend/.env.example
+!backend/.env.example
+
+# Node / Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.next/
+out/
+build/
+dist/
+.turbo/
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Database & Prisma
+database/prisma/generated/
+*.sqlite
+*.sqlite-journal
+*.db
+pgdata/
+
+# IDE & Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+.project
+.classpath
+.settings/
+
+# Docker
+docker/data/
+
+# Storage, Uploads & Logs
+storage/
+backend/uploads/*
+!backend/uploads/.gitkeep
+*.log
